@@ -34,3 +34,66 @@ db.salles.updateMany({ _id: 3 }, { $push: { styles: { $each: ["techno", "reggae"
 db.salles.updateMany({nom: {$regex: '[^aeiou]+$'}}, {$push: {avis: {date: new Date(), note: NumberInt(10)}}}) // Mets à jour les salles qui commencent par une voyelle (case-insensitive) en ajoutant un avis à la date du jour et une note de 10.
 db.salles.updateMany({nom: {$regex: /^[zZ]/}}, {$set: {nom: "Pub Z", capacite: 50, smac: false}}, {upsert: true}) // Mets à jour les documents en mode upsert qui commence par z ou Z en leur affectant le nom Pub Z avec une capacité de 50 personnes ainsi qu'en positionnant SMAC sur false.
 ```
+
+Exo Index :
+```js
+// Afin de répondre au besoin demandé, on crée un index composé sur les champs "capacite" et "adresse.codePostal". Cet index permettrait d'accélérer les recherches en fournissant un accès direct aux documents qui répondent aux critères spécifiés.
+db.salles.createIndex({"adresse.codePostal": 1, "capacite": 1})
+// Pour supprimer l'index, on utilise la commande suivante :
+db.salles.dropIndex({"adresse.codePostal": 1, "capacite": 1})
+```
+
+Exo Validation 1 :
+
+Le problème est que le code postal n'est pas ajouté à l'insertion du document.
+Afin de régulariser le problème, on pourrait ajouter un schéma de validation afin que les utilisateurs ne puissent pas ajouter de propriétés ou en oublier.
+Cela peut être possible avec l'utilisation de $jsonSchema par exemple :
+```js
+db.runCommand({collMod: "salles",
+  validator: {
+    $jsonSchema: {
+      bsonType: "object",
+      required: ["nom", "capacite", "adresse.ville", "adresse.codePostal"],
+      properties: {
+        nom: {
+          bsonType: "string",
+          description: "Doit être une chaine de caractères et est obligatoire"
+        },
+        capacite: {
+          bsonType: "int",
+          description: "Doit être un int et est obligatoire"
+        },
+        adresse: {
+          bsonType: "object",
+          required: ["ville", "codePostal"],
+          properties: {
+            ville: {
+              bsonType: "string",
+              description: "Doit être une chaine de caractères et est obligatoire"
+            },
+            codePostal: {
+              bsonType: "string",
+              description: "Doit être une chaine de caractères et est obligatoire"
+            }
+          }
+        }
+      }
+    }
+  }
+})
+```
+
+
+Exo Validation 2 :
+```js
+/*Si on exécute la requête db.salles.updateMany({}, {$set: {"verifie": true}}), on obtient une erreur de validation, car le champ verifie ne fait pas partie du schéma de validation.
+
+Pour supprimer les critères rajoutés à l'aide de la méthode delete en JavaScript :*/
+delete db.salles.validator;
+db.runCommand({collMod: "salles", validationLevel: "off"});
+```
+
+Exo Validation 3 :
+```
+A l'exécution de la requête de la mise à jour, la requête fonctionne car les règles précédentes ont été supprimées.
+```
