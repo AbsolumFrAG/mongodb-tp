@@ -97,3 +97,13 @@ Exo Validation 3 :
 ```
 A l'exécution de la requête de la mise à jour, la requête fonctionne car les règles précédentes ont été supprimées.
 ```
+
+Exo Geo 1 :
+```js
+```
+
+Exo Geo 2 :
+```js
+var marseille = {"type": "Point", "coordinates": [43.300000, 5.400000]}
+db.salles.find({ location: { $near: { $geometry: marseille, $maxDistance: 100000 } } }).sort({ location: { $near: marseille } }) // Retourne la ville des salles situées dans un rayon de 100km autour de Marseille du plus proche au plus éloigné.
+```
